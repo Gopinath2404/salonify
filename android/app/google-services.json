@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "673772545165",
+    "firebase_url": "https://salonify-f2ef3-default-rtdb.firebaseio.com",
+    "project_id": "salonify-f2ef3",
+    "storage_bucket": "salonify-f2ef3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:673772545165:android:87cef3cdd9348fafee2ec4",
+        "android_client_info": {
+          "package_name": "com.example.salonify"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "673772545165-ebcujbtv6ashd370sc7abs5uqngeam7q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqMS9DPZv1XmoVC5MUZKHlIPzhuI-dRp4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "673772545165-ebcujbtv6ashd370sc7abs5uqngeam7q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "673772545165-3gbbhnlpi2gih6okjalph4epkbuhco3h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.salonify"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

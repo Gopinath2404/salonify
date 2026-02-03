@@ -1,0 +1,257 @@
+import 'package:flutter/material.dart';
+import '../models/user_model.dart';
+import '../models/booking_model.dart';
+import '../services/firebase_database_service.dart';
+
+class AdminDashboardScreen extends StatefulWidget {
+  final User user;
+  final String salonId;
+
+  const AdminDashboardScreen({
+    Key? key,
+    required this.user,
+    required this.salonId,
+  }) : super(key: key);
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  final FirebaseDatabaseService _dbService = FirebaseDatabaseService();
+  List<Booking> _bookings = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookings();
+  }
+
+  Future<void> _loadBookings() async {
+    try {
+      // For now, we'll load all bookings
+      // TODO: Filter by salonId when implemented
+      final bookings = await _dbService.getAllBookings();
+      setState(() {
+        _bookings = bookings;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading bookings: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading bookings: $e')),
+      );
+    }
+  }
+
+  Future<void> _updateBookingStatus(String bookingId, String status) async {
+    try {
+      final success = await _dbService.updateBookingStatus(bookingId, status);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Booking $status successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadBookings(); // Refresh the list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update booking status'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating booking: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Admin Dashboard'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _loadBookings,
+          ),
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () {
+              // TODO: Implement logout
+            },
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : _bookings.isEmpty
+              ? _buildEmptyState()
+              : _buildBookingList(),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_available_outlined,
+            size: 80,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+          ),
+          SizedBox(height: 24),
+          Text(
+            'No Bookings Yet',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Bookings will appear here once customers make appointments',
+            style: Theme.of(context).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingList() {
+    return ListView.builder(
+      padding: EdgeInsets.all(16),
+      itemCount: _bookings.length,
+      itemBuilder: (context, index) {
+        final booking = _bookings[index];
+        return _buildBookingCard(booking);
+      },
+    );
+  }
+
+  Widget _buildBookingCard(Booking booking) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 16),
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: _getStatusColor(booking.status).withOpacity(0.1),
+          child: Text(
+            booking.statusEmoji,
+            style: TextStyle(fontSize: 18),
+          ),
+        ),
+        title: Text(booking.serviceName),
+        subtitle: Text('${booking.date} at ${booking.time}'),
+        trailing: _buildStatusChip(booking.status),
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoRow('Customer', booking.userName),
+                _buildInfoRow('Service', booking.serviceName),
+                _buildInfoRow('Date', booking.date),
+                _buildInfoRow('Time', booking.time),
+                _buildInfoRow('Status', booking.status),
+                SizedBox(height: 16),
+                if (booking.isPending) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _updateBookingStatus(booking.id, 'approved'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                          ),
+                          child: Text('Approve'),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _updateBookingStatus(booking.id, 'rejected'),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.red),
+                          ),
+                          child: Text(
+                            'Reject',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: _getStatusColor(status).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(
+          color: _getStatusColor(status),
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'cancelled':
+        return Colors.grey;
+      default:
+        return Colors.blue;
+    }
+  }
+}
